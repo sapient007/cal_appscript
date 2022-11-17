@@ -1,0 +1,79 @@
+// setting varibales
+var _calendarId = <insert cal id here https://xfanatical.com/blog/how-to-find-your-google-calendar-id/ >
+
+var spreadsheet = SpreadsheetApp.getActive().getSheetByName("Weekly Schedule");
+var calendarId = spreadsheet.getRange("C4").getValue();
+var eventCal = CalendarApp.getCalendarById(_calendarId);
+
+// set date ranges
+var _today = new Date();
+var _firstWeekD = _today.getDate() - (_today.getDay());
+var _lastWeekD =  _firstWeekD + 6 ;
+var firstDayOfWeek = new Date(_today.setDate(_firstWeekD));
+firstDayOfWeek.setHours(0);
+var lastDatofWeek = new Date(_today.setDate(_lastWeekD));
+
+//UI to be added to sheet
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Calendar')
+      .addItem('Clear Calendar', 'clearWeeklyCal')
+      .addItem('Set Calendar', 'scheduleShifts')
+      .addToUi();
+}
+
+function scheduleShifts()
+{
+  var scheduledShifts = spreadsheet.getRange ("B3:I26").getValues();
+
+  for (var row = 2 ; row < scheduledShifts.length ; row ++)
+  {
+    for ( var col = 1; col < scheduledShifts[row].length; col ++ )
+    {
+      //skip row if no value has been set
+      if (scheduledShifts[row][col].toString().trim().length > 0 )
+      {
+        //var person to schedul
+        var _teamMember = scheduledShifts[row][col].toString().trim();
+        //set event start and end date 
+        var _scheduledDate = new Date(scheduledShifts[0][col]);
+
+        //assume 1 hour windows to avid scheduling too many blocks
+        var _hourStart = parseInt(scheduledShifts[row][0]).toFixed(0);
+        var _hourEnd = parseInt(Number(_hourStart) + 1).toFixed(0);
+
+        //define start datetime and end datetime
+        var _eventStartDate = new Date(_scheduledDate);
+        var _eventEndDate = new Date(_scheduledDate);
+        _eventStartDate.setHours(_hourStart);
+        _eventEndDate.setHours(_hourEnd);
+
+        //set the calendar events
+        Logger.log( "Scheduling Event for " + _teamMember + " From " + _eventStartDate + " To " + _eventEndDate);
+        eventCal.createEvent(_teamMember, _eventStartDate, _eventEndDate);
+      }
+    }
+  }
+
+}
+
+
+function clearWeeklyCal()
+{
+  Logger.log ("Clearning out Calendar for: " + firstDayOfWeek + " to " + lastDatofWeek );
+
+  //delete events and log
+  var events = eventCal.getEvents( firstDayOfWeek,lastDatofWeek);
+  for (var i = 0; i < events.length; i++)
+  {
+    var ev = events[i];
+    Logger.log('Event: '+ev.getTitle()+' found on '+ev.getStartTime()); // Log event name and title
+    ev.deleteEvent(); // delete event
+  }
+
+}
+
+function syncWeeklyCal()
+{
+  //sync sheets cal to Google cal
+}
